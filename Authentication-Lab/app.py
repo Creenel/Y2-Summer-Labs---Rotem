@@ -1,4 +1,6 @@
-from flask import Flask, render_template,request
+from collections.abc import MutableMapping
+
+from flask import Flask, render_template,request, redirect, url_for
 from flask import session as login_session
 import pyrebase
 
@@ -23,27 +25,52 @@ auth = firebase.auth()
 
 @app.route('/', methods = ["GET","POST"])
 def main():
-	return render_template("signup.html")
-	if method == "POST":
-		login_session['user'] = auth.create_user_with_email_and_password(email_address,password)
-		login_session['quotes'] = []
+	login_session['quotes'] = []
+	if request.method == "POST":
+		login_session['user'] = auth.create_user_with_email_and_password(request.form['email_address'],request.form['password'])
+		return redirect(url_for("home"))
+	else:
+		return render_template("signup.html")
 
 
-@app.route('/signin')
+
+@app.route('/signin', methods = ['GET','POST'])
 def signin():
-	return render_template("signin.html")
+	if request.method == "POST":
+		login_session['user'] = auth.sign_in_with_email_and_password(request.form['email_address'], request.form['password'])
+		return redirect(url_for("home"))
+	else:
+		return render_template("signin.html")
 
-@app.route('/home')
+@app.route('/home', methods = ['GET','POST'])
 def home():
-	return render_template("home.html")
+	print(request.method)
+	if request.method == 'POST':
+		quote = request.form['quoteinp']
+		print(quote)
+		login_session['quotes'].append(quote)
+		login_session.modified = True
+		return redirect(url_for('thanks'))
+	else:
+		return render_template("home.html")
 
 @app.route('/display')
 def display():
-	return render_template("display.html")
+	print(login_session['quotes'])
+	return render_template("display.html",quotes = login_session['quotes'])
 
-@app.route('/thanks')
+@app.route('/thanks', methods = ['GET','POST'])
 def thanks():
-	return render_template("thanks.html")
+	print(login_session['quotes'])
+	return render_template("thanks.html", quotes = login_session['quotes'])
+
+@app.route('/signout')
+def signout():
+	login_session['user'] = None
+	auth.current_user = None
+	return render_template("signin.html")
+
+
 
 
 
