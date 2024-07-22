@@ -12,7 +12,7 @@ Config = {
   "messagingSenderId": "893507159975",
   "appId": "1:893507159975:web:73a5e84692fcf8c32bd882",
   "measurementId": "G-707D0T2RZJ",
-  "databaseURL": ""
+  "databaseURL": "https://my-quoteboard-default-rtdb.europe-west1.firebasedatabase.app/"
 }
 
 app = Flask(__name__, template_folder = 'templates', static_folder = 'static')
@@ -20,14 +20,17 @@ app.config['SECRET_KEY'] = 'starkistspicytuna'
 
 firebase = pyrebase.initialize_app(Config)
 auth = firebase.auth()
-
+db = firebase.database()
 
 
 @app.route('/', methods = ["GET","POST"])
 def main():
 	login_session['quotes'] = []
 	if request.method == "POST":
+		user = {"full_name":request.form['full_name'],"username":request.form['username'],"email":request.form['email_address']}
 		login_session['user'] = auth.create_user_with_email_and_password(request.form['email_address'],request.form['password'])
+		login_session['user_id'] = login_session['user']['localId']
+		db.child("Users").child(login_session['user_id']).set(user)
 		return redirect(url_for("home"))
 	else:
 		return render_template("signup.html")
@@ -46,9 +49,9 @@ def signin():
 def home():
 	print(request.method)
 	if request.method == 'POST':
-		quote = request.form['quoteinp']
+		quote = {"text":request.form['quoteinp'],"said_by":request.form["author"],"uid":login_session['user_id']}
 		print(quote)
-		login_session['quotes'].append(quote)
+		db.child("Quotes").push(quote)
 		login_session.modified = True
 		return redirect(url_for('thanks'))
 	else:
@@ -56,8 +59,8 @@ def home():
 
 @app.route('/display')
 def display():
-	print(login_session['quotes'])
-	return render_template("display.html",quotes = login_session['quotes'])
+	q_list = db.child("Quotes").get().val()
+	return render_template("display.html",quotes = q_list)
 
 @app.route('/thanks', methods = ['GET','POST'])
 def thanks():

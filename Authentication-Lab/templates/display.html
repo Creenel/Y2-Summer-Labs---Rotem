@@ -3,8 +3,8 @@
 	<body>
 		<h1>Quote board:</h1>
 		<ul>
-			{% for q in quotes %}
-			<li>{{q}}</li>
+			{% for quote in quotes.items() %}
+				<li>Quote: {{ quote[1]['text'] }}<br>By: {{ quote[1]['said_by'] }}</li>
 			{% endfor %}
 		</ul>
 		<a href = "/home">Home</a>
