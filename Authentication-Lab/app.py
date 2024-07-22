@@ -66,9 +66,10 @@ def thanks():
 
 @app.route('/signout')
 def signout():
+	print("test")
 	login_session['user'] = None
 	auth.current_user = None
-	return render_template("signin.html")
+	return redirect(url_for("signin"))
 
 
 
